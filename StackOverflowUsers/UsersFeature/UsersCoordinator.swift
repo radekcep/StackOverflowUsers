@@ -15,11 +15,17 @@ class UsersCoordinator {
     }
     
     func start() {
+        let keyValueStorage = KeyValueStorage(userDefaults: .standard)
+        let networkService = NetworkService()
+        let imageCache = NSCache<NSURL, UIImage>()
+        
         let viewModel = UsersListViewModel(
-            followUserUseCase: FollowUserUseCase(keyValueStorage: KeyValueStorage(userDefaults: .standard)),
-            isUserFollowedUseCase: IsUserFollowedUseCase(keyValueStorage: KeyValueStorage(userDefaults: .standard)),
-            topUsersUseCase: TopUsersUseCase(stackOverflowService: StackOverflowService()),
-            unfollowUserUseCase: UnfollowUserUseCase(keyValueStorage: KeyValueStorage(userDefaults: .standard))
+            downloadImageUseCase: DownloadImageUseCase(networkService: networkService, imageCache: imageCache),
+            followUserUseCase: FollowUserUseCase(keyValueStorage: keyValueStorage),
+            isUserFollowedUseCase: IsUserFollowedUseCase(keyValueStorage: keyValueStorage),
+            loadLocalImageUseCase: LoadLocalImageUseCase(imageCache: imageCache),
+            topUsersUseCase: TopUsersUseCase(networkService: networkService),
+            unfollowUserUseCase: UnfollowUserUseCase(keyValueStorage: keyValueStorage)
         )
         let viewController = UsersListViewController(viewModel: viewModel)
         viewModel.view = viewController

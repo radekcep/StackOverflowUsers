@@ -9,18 +9,18 @@ import UIKit
 
 // MARK: - Model
 
-enum UserRowUIModel: Equatable {
+enum UsersListRowUIModel: Equatable {
     case user(UserUIModel)
     case action(ActionUIModel)
 }
 
 protocol UsersListViewModelProtocol: AnyObject {
     var isLoading: Bool { get }
-    var rows: [UserRowUIModel] { get }
-    
+    var numberOfItems: Int { get }
     func viewDidLoad()
     func didFollowUser(at index: Int)
     func didSelectAction(at index: Int)
+    func usersListRowUIModel(at index: Int) -> UsersListRowUIModel
 }
 
 // MARK: - UIViewController
@@ -99,7 +99,7 @@ extension UsersListViewController: UsersListViewControllerProtocol {
         }
     }
     
-    func updateRow(_ index: Int) {
+    func updateRow(at index: Int) {
         tableView.reloadRows(at: [.init(row: index, section: .zero)], with: .automatic)
     }
     
@@ -112,11 +112,11 @@ extension UsersListViewController: UsersListViewControllerProtocol {
 
 extension UsersListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        viewModel.rows.count
+        viewModel.numberOfItems
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        switch viewModel.rows[indexPath.row] {
+        switch viewModel.usersListRowUIModel(at: indexPath.row)  {
         case let .user(model):
             let cell: UserCell = tableView.dequeueReusableCell(for: indexPath)
             cell.load(model)
@@ -135,17 +135,22 @@ extension UsersListViewController: UITableViewDataSource {
 
 #Preview {
     class PreviewUsersViewModel: UsersListViewModelProtocol {
-        let isLoading: Bool = true
-        
-        let rows: [UserRowUIModel] = [
-            .user(.init(name: "Ferda Mravenec", isFollowed: true)),
-            .user(.init(name: "Brouk Pytlík", isFollowed: false)),
+        private let uiModels: [UsersListRowUIModel] = [
+            .user(.init(name: "Ferda Mravenec", image: UIImage(systemName: "person.circle")!, isFollowed: true)),
+            .user(.init(name: "Brouk Pytlík", image: UIImage(systemName: "person.circle")!, isFollowed: false)),
             .action(.init(title: "Do not press!"))
         ]
+        
+        let isLoading: Bool = true
+        var numberOfItems: Int { uiModels.count }
         
         func viewDidLoad() {}
         func didFollowUser(at index: Int) {}
         func didSelectAction(at index: Int) {}
+        
+        func usersListRowUIModel(at index: Int) -> UsersListRowUIModel {
+            uiModels[index]
+        }
     }
 
     return UsersListViewController(viewModel: PreviewUsersViewModel())

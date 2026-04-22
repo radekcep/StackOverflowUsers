@@ -5,10 +5,12 @@
 //  Created by Radek on 22.04.2026.
 //
 
+import Foundation
+
 struct User: Decodable {
     let id: Int
     let name: String
-    let imageURL: String
+    let imageURL: URL
     let reputation: Int
     
     enum CodingKeys: String, CodingKey {

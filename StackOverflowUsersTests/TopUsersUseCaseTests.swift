@@ -10,18 +10,20 @@ import XCTest
 
 @MainActor
 final class TopUsersUseCaseTests: XCTestCase {
-    func testParsingData() async throws {
+    func testFetchingData() async throws {
+        var requestedURL: URL?
         let responseData = try XCTUnwrap(String.responseJSON.data(using: .utf8))
-        let stackOverflowService = StackOverflowServiceMock { responseData }
+        let networkService = NetworkServiceMock { requestedURL = $0; return responseData }
         
-        let sut = TopUsersUseCase(stackOverflowService: stackOverflowService)
+        let sut = TopUsersUseCase(networkService: networkService)
         let topUsers = try await sut.topUsers()
         
+        XCTAssertEqual(requestedURL, URL(string: "https://api.stackexchange.com/2.2/users?page=1&pagesize=20&order=desc&sort=reputation&site=stackoverflow")!)
         XCTAssertEqual(topUsers.count, 1)
         let user = try XCTUnwrap(topUsers.first)
         XCTAssertEqual(user.id, 11683)
         XCTAssertEqual(user.name, "Jon Skeet")
-        XCTAssertEqual(user.imageURL, "https://www.gravatar.com/avatar/6d8ebb117e8d83d74ea95fbdd0f87e13?s=256&d=identicon&r=PG")
+        XCTAssertEqual(user.imageURL, URL(string: "https://www.gravatar.com/avatar/6d8ebb117e8d83d74ea95fbdd0f87e13?s=256&d=identicon&r=PG")!)
         XCTAssertEqual(user.reputation, 1454978)
     }
 }
@@ -60,17 +62,5 @@ private extension String {
           ]
         }
         """
-    }
-}
-
-private class StackOverflowServiceMock: StackOverflowServiceProtocol {
-    var topUsersMock: () async throws -> Data
-    
-    init(topUsersMock: @escaping () async throws -> Data) {
-        self.topUsersMock = topUsersMock
-    }
-    
-    func topUsers() async throws -> Data {
-        try await topUsersMock()
     }
 }

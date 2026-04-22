@@ -5,113 +5,147 @@
 //  Created by Radek on 22.04.2026.
 //
 
+import UIKit
+
 // MARK: - Model
 
 protocol UsersListViewControllerProtocol: AnyObject {
     func updateActivityIndicator()
-    func updateRow(_ index: Int)
+    func updateRow(at index: Int)
     func reloadData()
 }
 
 // MARK: - ViewModel
 
 class UsersListViewModel {
+    private let downloadImageUseCase: DownloadImageUseCaseProtocol
     private let followUserUseCase: FollowUserUseCaseProtocol
     private let isUserFollowedUseCase: IsUserFollowedUseCaseProtocol
+    private let loadLocalImageUseCase: LoadLocalImageUseCaseProtocol
     private let topUsersUseCase: TopUsersUseCaseProtocol
     private let unfollowUserUseCase: UnfollowUserUseCaseProtocol
     
-    private var topUsersLoadingTask: Task<(), any Error>?
-    private var topUsers: [User] = []
+    private var usersLoadingTask: Task<(), any Error>?
+    private var users: [User] = []
     
     weak var view: UsersListViewControllerProtocol?
     
-    var rows: [UserRowUIModel] = []
-    var isLoading: Bool = true
+    var isLoading: Bool = true {
+        didSet { view?.updateActivityIndicator() }
+    }
     
     init(
+        downloadImageUseCase: DownloadImageUseCaseProtocol,
         followUserUseCase: FollowUserUseCaseProtocol,
         isUserFollowedUseCase: IsUserFollowedUseCaseProtocol,
+        loadLocalImageUseCase: LoadLocalImageUseCaseProtocol,
         topUsersUseCase: TopUsersUseCaseProtocol,
         unfollowUserUseCase: UnfollowUserUseCaseProtocol
     ) {
+        self.downloadImageUseCase = downloadImageUseCase
         self.followUserUseCase = followUserUseCase
         self.isUserFollowedUseCase = isUserFollowedUseCase
+        self.loadLocalImageUseCase = loadLocalImageUseCase
         self.topUsersUseCase = topUsersUseCase
         self.unfollowUserUseCase = unfollowUserUseCase
     }
     
     deinit {
-        topUsersLoadingTask?.cancel()
+        usersLoadingTask?.cancel()
     }
 }
 
 // MARK: - UsersListViewModelProtocol
 
 extension UsersListViewModel: UsersListViewModelProtocol {
+    var numberOfItems: Int {
+        if users.count == .zero { .zero }
+        else { users.count + 1 }
+    }
+    
     func viewDidLoad() {
         reloadData()
     }
     
     func didFollowUser(at index: Int) {
-        let user = topUsers[index]
+        let user = users[index]
         if isUserFollowedUseCase.isFollowed(user) {
             unfollowUserUseCase.unfollow(user)
         } else {
             followUserUseCase.follow(user)
         }
         
-        rows[index] = .user(userUIModel(from: user))
-        view?.updateRow(index)
+        view?.updateRow(at: index)
     }
     
     func didSelectAction(at index: Int) {
-        guard index == rows.endIndex else { return }
         // TODO: Show Error
+    }
+    
+    func usersListRowUIModel(at index: Int) -> UsersListRowUIModel {
+        if users.indices.contains(index) {
+            usersListRowUIModel(from: users[index])
+        } else {
+            .action(.init(title: "Show Error"))
+        }
     }
 }
 
-// MARK: - Data handling
+// MARK: - Data Handling
 
 private extension UsersListViewModel {
     func reloadData() {
-        topUsersLoadingTask?.cancel()
-        topUsers = []
+        usersLoadingTask?.cancel()
         
-        rows = []
+        users = []
         view?.reloadData()
         
         isLoading = true
-        view?.updateActivityIndicator()
-        
-        topUsersLoadingTask = Task { [weak self, topUsersUseCase] in
+        usersLoadingTask = Task { [weak self, topUsersUseCase] in
             do {
-                let topUsers = try await topUsersUseCase.topUsers()
-                self?.load(topUsers)
+                let users = try await topUsersUseCase.topUsers()
+                self?.users = users
+                self?.view?.reloadData()
             } catch is CancellationError {
                 // Don't show errors on cancelation
             } catch {
                 // TODO: Show Error
-                self?.load([])
+            }
+            
+            self?.isLoading = false
+            await self?.downloadMissingUserImages()
+        }
+    }
+        
+    func downloadMissingUserImages() async {
+        await withTaskGroup(of: Int?.self) { [weak self, users, downloadImageUseCase, loadLocalImageUseCase] group in
+            for (index, user) in users.enumerated() where loadLocalImageUseCase.image(for: user.imageURL) == nil {
+                group.addTask {
+                    let image = try? await downloadImageUseCase.download(user.imageURL)
+                    return image.map { _ in index }
+                }
+            }
+            
+            for await case let index? in group {
+                self?.view?.updateRow(at: index)
             }
         }
     }
     
-    func load(_ topUsers: [User]) {
-        self.topUsers = topUsers
+    func usersListRowUIModel(from user: User) -> UsersListRowUIModel {
+        let isFollowed = isUserFollowedUseCase.isFollowed(user)
+        let image = loadLocalImageUseCase.image(for: user.imageURL)
         
-        rows = topUsers.map { .user(userUIModel(from: $0)) }
-        rows.append(.action(.init(title: "Show Error")))
-        view?.reloadData()
-        
-        isLoading = false
-        view?.updateActivityIndicator()
-    }
-    
-    func userUIModel(from user: User) -> UserUIModel {
-        .init(
+        return .user(.init(
             name: user.name,
-            isFollowed: isUserFollowedUseCase.isFollowed(user)
-        )
+            image: image ?? Constant.fallbackUserImage,
+            isFollowed: isFollowed
+        ))
     }
+}
+
+// MARK: - Constant
+
+private enum Constant {
+    static let fallbackUserImage = UIImage(systemName: "person.circle")!
 }

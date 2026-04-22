@@ -11,6 +11,7 @@ import UIKit
 
 struct UserUIModel: Equatable {
     let name: String
+    let image: UIImage
     let isFollowed: Bool
 }
 
@@ -18,6 +19,7 @@ struct UserUIModel: Equatable {
 
 class UserCell: UITableViewCell {
     private var stackView = UIStackView()
+    private let userImageView = UIImageView()
     private var titleLabel = UILabel()
     private var followButton = UIButton()
     
@@ -37,6 +39,7 @@ class UserCell: UITableViewCell {
     
     func addSubviews() {
         contentView.addSubview(stackView)
+        stackView.addArrangedSubview(userImageView)
         stackView.addArrangedSubview(titleLabel)
         stackView.addArrangedSubview(followButton)
     }
@@ -49,14 +52,24 @@ class UserCell: UITableViewCell {
             stackView.leadingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.leadingAnchor),
             stackView.trailingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.trailingAnchor),
         ])
+        
+        userImageView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            userImageView.heightAnchor.constraint(equalToConstant: Spacing.xl),
+            userImageView.widthAnchor.constraint(equalToConstant: Spacing.xl),
+        ])
     }
     
     func setupSubviews() {
         stackView.axis = .horizontal
+        stackView.alignment = .center
         stackView.distribution = .fill
         stackView.spacing = Spacing.s
         stackView.isLayoutMarginsRelativeArrangement = true
         stackView.layoutMargins = .s
+        
+        userImageView.layer.cornerRadius = Spacing.xl / 2
+        userImageView.clipsToBounds = true
         
         followButton.addAction(
             .init { [weak self] _ in self?.onFollowClick?() },
@@ -66,6 +79,7 @@ class UserCell: UITableViewCell {
     
     func load(_ model: UserUIModel) {
         titleLabel.text = model.name
+        userImageView.image = model.image
         
         if model.isFollowed {
             followButton.configuration = .primary
@@ -82,6 +96,7 @@ class UserCell: UITableViewCell {
 #Preview {
     let model = UserUIModel(
         name: "Ferda Mravenec",
+        image: UIImage(systemName: "person.circle")!,
         isFollowed: true
     )
     

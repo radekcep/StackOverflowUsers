@@ -12,8 +12,10 @@ import XCTest
 final class UsersListViewModelTests: XCTestCase {
     func testIsPassiveOnInit() {
         let sut = UsersListViewModel(
+            downloadImageUseCase: DownloadImageUseCaseMock(),
             followUserUseCase: FollowUserUseCaseMock(),
             isUserFollowedUseCase: IsUserFollowedUseCaseMock(),
+            loadLocalImageUseCase: LoadLocalImageUseCaseMock(),
             topUsersUseCase: TopUsersUseCaseMock(),
             unfollowUserUseCase: UnfollowUserUseCaseMock()
         )
@@ -32,8 +34,10 @@ final class UsersListViewModelTests: XCTestCase {
         ]
         
         let sut = UsersListViewModel(
+            downloadImageUseCase: DownloadImageUseCaseMock { _ in throw ErrorStub() },
             followUserUseCase: FollowUserUseCaseMock(),
             isUserFollowedUseCase: IsUserFollowedUseCaseMock { $0.id == 2 },
+            loadLocalImageUseCase: LoadLocalImageUseCaseMock { _ in nil },
             topUsersUseCase: TopUsersUseCaseMock { loadedData },
             unfollowUserUseCase: UnfollowUserUseCaseMock()
         )
@@ -52,19 +56,20 @@ final class UsersListViewModelTests: XCTestCase {
         XCTAssert(updateActivityIndicatorCalled)
         XCTAssert(reloadDataCalled)
         XCTAssertFalse(sut.isLoading)
-        XCTAssertEqual(sut.rows, [
-            .user(.init(name: "First User", isFollowed: false)),
-            .user(.init(name: "Second User", isFollowed: true)),
-            .user(.init(name: "Third User", isFollowed: false)),
-            .action(.init(title: "Show Error")),
-        ])
+        XCTAssertEqual(sut.numberOfItems, 4)
+        XCTAssertEqual(sut.usersListRowUIModel(at: 0), .user(.init(name: "First User", image: UIImage(systemName: "person.circle")!, isFollowed: false)))
+        XCTAssertEqual(sut.usersListRowUIModel(at: 1), .user(.init(name: "Second User", image: UIImage(systemName: "person.circle")!, isFollowed: true)))
+        XCTAssertEqual(sut.usersListRowUIModel(at: 2), .user(.init(name: "Third User", image: UIImage(systemName: "person.circle")!, isFollowed: false)))
+        XCTAssertEqual(sut.usersListRowUIModel(at: 3), .action(.init(title: "Show Error")))
     }
     
     func testTaskCancelledOnDeinit() async {
         let expectation = expectation(description: #function)
         var sut: UsersListViewModel? = UsersListViewModel(
+            downloadImageUseCase: DownloadImageUseCaseMock { _ in throw ErrorStub() },
             followUserUseCase: FollowUserUseCaseMock(),
             isUserFollowedUseCase: IsUserFollowedUseCaseMock(),
+            loadLocalImageUseCase: LoadLocalImageUseCaseMock { _ in nil },
             topUsersUseCase: TopUsersUseCaseMock {
                 try await withTaskCancellationHandler {
                     try await Task.sleep(for: .seconds(1))
@@ -92,8 +97,10 @@ final class UsersListViewModelTests: XCTestCase {
         
         var followedUser: User?
         let sut = UsersListViewModel(
+            downloadImageUseCase: DownloadImageUseCaseMock { _ in throw ErrorStub() },
             followUserUseCase: FollowUserUseCaseMock { followedUser = $0 },
             isUserFollowedUseCase: IsUserFollowedUseCaseMock { $0.id == 2 },
+            loadLocalImageUseCase: LoadLocalImageUseCaseMock { _ in nil },
             topUsersUseCase: TopUsersUseCaseMock { loadedData },
             unfollowUserUseCase: UnfollowUserUseCaseMock()
         )
@@ -123,8 +130,10 @@ final class UsersListViewModelTests: XCTestCase {
         
         var unfollowedUser: User?
         let sut = UsersListViewModel(
+            downloadImageUseCase: DownloadImageUseCaseMock { _ in throw ErrorStub() },
             followUserUseCase: FollowUserUseCaseMock(),
             isUserFollowedUseCase: IsUserFollowedUseCaseMock { $0.id == 2 },
+            loadLocalImageUseCase: LoadLocalImageUseCaseMock { _ in nil },
             topUsersUseCase: TopUsersUseCaseMock { loadedData },
             unfollowUserUseCase: UnfollowUserUseCaseMock { unfollowedUser = $0 }
         )
@@ -144,4 +153,53 @@ final class UsersListViewModelTests: XCTestCase {
         XCTAssertEqual(unfollowedUser?.id, 2)
         XCTAssertEqual(rowUpdated, 1)
     }
+    
+    func testImagesDownload() async {
+        let updateRowExpectation = self.expectation(description: "Rows should be updated with downloaded images")
+        updateRowExpectation.expectedFulfillmentCount = 2
+        
+        let loadedData = [
+            User.mock(id: 1, name: "First User", imageURL: URL(string: "mocked/image/url/1")!),
+            User.mock(id: 2, name: "Second User", imageURL: URL(string: "mocked/image/url/2")!),
+            User.mock(id: 3, name: "Third User", imageURL: URL(string: "mocked/image/url/3")!),
+        ]
+        
+        var downloadsRequested = [URL]()
+        let sut = UsersListViewModel(
+            downloadImageUseCase: DownloadImageUseCaseMock { url in
+                downloadsRequested.append(url);
+                return UIImage(systemName: "person.circle")!
+            },
+            followUserUseCase: FollowUserUseCaseMock(),
+            isUserFollowedUseCase: IsUserFollowedUseCaseMock(),
+            loadLocalImageUseCase: LoadLocalImageUseCaseMock { url in
+                switch url {
+                case URL(string: "mocked/image/url/1")!: nil
+                case URL(string: "mocked/image/url/2")!: UIImage(systemName: "person.circle")!
+                case URL(string: "mocked/image/url/3")!: nil
+                default: fatalError("Invalid path")
+                }
+            },
+            topUsersUseCase: TopUsersUseCaseMock { loadedData },
+            unfollowUserUseCase: UnfollowUserUseCaseMock()
+        )
+        var updatedRows = [Int]()
+        let view = UsersListViewControllerMock(
+            updateActivityIndicator: {},
+            updateRow: { updatedRows.append($0); updateRowExpectation.fulfill() },
+            reloadData: {}
+        )
+        sut.view = view
+        
+        sut.viewDidLoad()
+        await fulfillment(of: [updateRowExpectation])
+        
+        XCTAssertEqual(downloadsRequested, [
+            URL(string: "mocked/image/url/1")!,
+            URL(string: "mocked/image/url/3")!,
+        ])
+        XCTAssertEqual(updatedRows.sorted(), [0, 2])
+    }
 }
+
+private struct ErrorStub: Error {}

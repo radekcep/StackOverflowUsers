@@ -27,7 +27,7 @@ class UsersListViewControllerMock: UsersListViewControllerProtocol {
         _updateActivityIndicator()
     }
     
-    func updateRow(_ index: Int) {
+    func updateRow(at index: Int) {
         _updateRow(index)
     }
     

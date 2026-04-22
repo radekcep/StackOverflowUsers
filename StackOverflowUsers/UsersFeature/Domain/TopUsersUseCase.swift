@@ -12,15 +12,19 @@ protocol TopUsersUseCaseProtocol {
 }
 
 class TopUsersUseCase: TopUsersUseCaseProtocol {
-    private let stackOverflowService: StackOverflowServiceProtocol
+    private let networkService: NetworkServiceProtocol
     
-    init(stackOverflowService: StackOverflowServiceProtocol) {
-        self.stackOverflowService = stackOverflowService
+    init(networkService: NetworkServiceProtocol) {
+        self.networkService = networkService
     }
     
     func topUsers() async throws -> [User] {
-        let data = try await stackOverflowService.topUsers()
+        let data = try await networkService.download(Constant.topUsersURL)
         let userResponse = try JSONDecoder().decode(UserResponse.self, from: data)
         return userResponse.items
     }
+}
+
+private enum Constant {
+    static let topUsersURL = URL(string: "https://api.stackexchange.com/2.2/users?page=1&pagesize=20&order=desc&sort=reputation&site=stackoverflow")!
 }
