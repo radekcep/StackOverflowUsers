@@ -9,7 +9,7 @@ import UIKit
 
 // MARK: - Model
 
-struct ActionUIModel {
+struct ActionUIModel: Equatable {
     let title: String
 }
 

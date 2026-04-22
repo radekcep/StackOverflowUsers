@@ -9,7 +9,7 @@ import UIKit
 
 // MARK: - Model
 
-struct UserUIModel {
+struct UserUIModel: Equatable {
     let name: String
     let isFollowed: Bool
 }

@@ -9,16 +9,16 @@ import UIKit
 
 // MARK: - Model
 
-enum UserRowUIModel {
+enum UserRowUIModel: Equatable {
     case user(UserUIModel)
     case action(ActionUIModel)
 }
 
 protocol UsersListViewModelProtocol: AnyObject {
+    var isLoading: Bool { get }
     var rows: [UserRowUIModel] { get }
     
     func viewDidLoad()
-    func willDisplayCell(at index: Int)
     func didFollowUser(at index: Int)
     func didSelectAction(at index: Int)
 }
@@ -26,11 +26,11 @@ protocol UsersListViewModelProtocol: AnyObject {
 // MARK: - UIViewController
 
 class UsersListViewController: UIViewController {
-    private let tableView: UITableView
+    private let tableView = UITableView()
+    private let activityIndicator = UIActivityIndicatorView()
     private let viewModel: UsersListViewModelProtocol
     
     init(viewModel: UsersListViewModelProtocol) {
-        self.tableView = UITableView()
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
@@ -54,6 +54,7 @@ class UsersListViewController: UIViewController {
 private extension UsersListViewController {
     func addSubviews() {
         view.addSubview(tableView)
+        view.addSubview(activityIndicator)
     }
     
     func constraintSubviews() {
@@ -64,6 +65,12 @@ private extension UsersListViewController {
             tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
         ])
+        
+        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            activityIndicator.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
+        ])
     }
     
     func setupSubviews() {
@@ -73,6 +80,31 @@ private extension UsersListViewController {
         tableView.estimatedRowHeight = UITableView.automaticDimension
         tableView.register(UserCell.self)
         tableView.register(ActionCell.self)
+        
+        activityIndicator.style = .large
+        activityIndicator.color = .tintColor
+        activityIndicator.hidesWhenStopped = true
+        updateActivityIndicator()
+    }
+}
+
+// MARK: - UsersListViewControllerProtocol
+
+extension UsersListViewController: UsersListViewControllerProtocol {
+    func updateActivityIndicator() {
+        if viewModel.isLoading {
+            activityIndicator.startAnimating()
+        } else {
+            activityIndicator.stopAnimating()
+        }
+    }
+    
+    func updateRow(_ index: Int) {
+        tableView.reloadRows(at: [.init(row: index, section: .zero)], with: .automatic)
+    }
+    
+    func reloadData() {
+        tableView.reloadData()
     }
 }
 
@@ -103,6 +135,8 @@ extension UsersListViewController: UITableViewDataSource {
 
 #Preview {
     class PreviewUsersViewModel: UsersListViewModelProtocol {
+        let isLoading: Bool = true
+        
         let rows: [UserRowUIModel] = [
             .user(.init(name: "Ferda Mravenec", isFollowed: true)),
             .user(.init(name: "Brouk Pytlík", isFollowed: false)),
@@ -110,7 +144,6 @@ extension UsersListViewController: UITableViewDataSource {
         ]
         
         func viewDidLoad() {}
-        func willDisplayCell(at index: Int) {}
         func didFollowUser(at index: Int) {}
         func didSelectAction(at index: Int) {}
     }
