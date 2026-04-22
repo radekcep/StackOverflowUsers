@@ -15,6 +15,10 @@ protocol UsersListViewControllerProtocol: AnyObject {
     func reloadData()
 }
 
+protocol UsersCoordinatorProtocol: AnyObject {
+    func showError(_ model: ErrorUIModel) async
+}
+
 // MARK: - ViewModel
 
 class UsersListViewModel {
@@ -29,6 +33,7 @@ class UsersListViewModel {
     private var users: [User] = []
     
     weak var view: UsersListViewControllerProtocol?
+    weak var coordinator: UsersCoordinatorProtocol?
     
     var isLoading: Bool = true {
         didSet { view?.updateActivityIndicator() }
@@ -79,7 +84,7 @@ extension UsersListViewModel: UsersListViewModelProtocol {
     }
     
     func didSelectAction(at index: Int) {
-        // TODO: Show Error
+        showError()
     }
     
     func usersListRowUIModel(at index: Int) -> UsersListRowUIModel {
@@ -109,7 +114,7 @@ private extension UsersListViewModel {
             } catch is CancellationError {
                 // Don't show errors on cancelation
             } catch {
-                // TODO: Show Error
+                self?.showError()
             }
             
             self?.isLoading = false
@@ -143,10 +148,22 @@ private extension UsersListViewModel {
             isFollowed: isFollowed
         ))
     }
+    
+    func showError() {
+        Task {
+            await coordinator?.showError(Constant.defaultErrorModel)
+            reloadData()
+        }
+    }
 }
 
 // MARK: - Constant
 
 private enum Constant {
     static let fallbackUserImage = UIImage(systemName: "person.circle")!
+    static let defaultErrorModel = ErrorUIModel(
+        image: UIImage(systemName: "exclamationmark.triangle.fill")!,
+        title: "Something went wrong",
+        actionTitle: "Retry"
+    )
 }

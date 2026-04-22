@@ -29,8 +29,16 @@ class UsersCoordinator {
         )
         let viewController = UsersListViewController(viewModel: viewModel)
         viewModel.view = viewController
+        viewModel.coordinator = self
         
         navigationController.navigationBar.prefersLargeTitles = true
         navigationController.viewControllers = [viewController]
+    }
+}
+
+extension UsersCoordinator: UsersCoordinatorProtocol {
+    func showError(_ model: ErrorUIModel) async {
+        let errorCoordinator = ErrorCoordinator(viewController: navigationController)
+        await errorCoordinator.start(model: model)
     }
 }
