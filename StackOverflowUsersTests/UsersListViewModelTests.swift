@@ -28,9 +28,9 @@ final class UsersListViewModelTests: XCTestCase {
     
     func testLoadedData() async {
         let loadedData = [
-            User.mock(id: 1, name: "First User"),
-            User.mock(id: 2, name: "Second User"),
-            User.mock(id: 3, name: "Third User")
+            User.mock(id: 1, name: "First User", reputation: 1),
+            User.mock(id: 2, name: "Second User", reputation: 2),
+            User.mock(id: 3, name: "Third User", reputation: 3),
         ]
         
         let sut = UsersListViewModel(
@@ -57,9 +57,9 @@ final class UsersListViewModelTests: XCTestCase {
         XCTAssert(reloadDataCalled)
         XCTAssertFalse(sut.isLoading)
         XCTAssertEqual(sut.numberOfItems, 4)
-        XCTAssertEqual(sut.usersListRowUIModel(at: 0), .user(.init(name: "First User", image: UIImage(systemName: "person.circle")!, isFollowed: false)))
-        XCTAssertEqual(sut.usersListRowUIModel(at: 1), .user(.init(name: "Second User", image: UIImage(systemName: "person.circle")!, isFollowed: true)))
-        XCTAssertEqual(sut.usersListRowUIModel(at: 2), .user(.init(name: "Third User", image: UIImage(systemName: "person.circle")!, isFollowed: false)))
+        XCTAssertEqual(sut.usersListRowUIModel(at: 0), .user(.init(name: "First User", image: UIImage(systemName: "person.circle")!, reputation: "1", isFollowed: false)))
+        XCTAssertEqual(sut.usersListRowUIModel(at: 1), .user(.init(name: "Second User", image: UIImage(systemName: "person.circle")!, reputation: "2", isFollowed: true)))
+        XCTAssertEqual(sut.usersListRowUIModel(at: 2), .user(.init(name: "Third User", image: UIImage(systemName: "person.circle")!, reputation: "3", isFollowed: false)))
         XCTAssertEqual(sut.usersListRowUIModel(at: 3), .action(.init(title: "Show Error")))
     }
     

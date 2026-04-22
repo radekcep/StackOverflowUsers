@@ -39,9 +39,9 @@ class ActionCell: UITableViewCell {
     func constraintSubviews() {
         actionButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            actionButton.topAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.topAnchor, constant: Spacing.s),
-            actionButton.bottomAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.bottomAnchor, constant: -Spacing.s),
-            actionButton.centerXAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.centerXAnchor),
+            actionButton.topAnchor.constraint(equalTo: contentView.topAnchor, constant: Spacing.s),
+            actionButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -Spacing.s),
+            actionButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
         ])
     }
     

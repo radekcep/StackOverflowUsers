@@ -60,20 +60,24 @@ private extension UsersListViewController {
     func constraintSubviews() {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
         
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            activityIndicator.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
         ])
     }
     
     func setupSubviews() {
+        navigationItem.title = Constant.pageTitle
+        navigationItem.largeTitle = Constant.pageTitle
+        view.backgroundColor = .systemBackground
+        
         tableView.dataSource = self
         tableView.allowsSelection = false
         tableView.rowHeight = UITableView.automaticDimension
@@ -131,13 +135,19 @@ extension UsersListViewController: UITableViewDataSource {
     }
 }
 
+// MARK: - Constant
+
+private enum Constant {
+    static let pageTitle = "StackOverflow Users"
+}
+
 // MARK: - Preview
 
 #Preview {
     class PreviewUsersViewModel: UsersListViewModelProtocol {
         private let uiModels: [UsersListRowUIModel] = [
-            .user(.init(name: "Ferda Mravenec", image: UIImage(systemName: "person.circle")!, isFollowed: true)),
-            .user(.init(name: "Brouk Pytlík", image: UIImage(systemName: "person.circle")!, isFollowed: false)),
+            .user(.init(name: "Ferda Mravenec", image: UIImage(systemName: "person.circle")!, reputation: "12345", isFollowed: true)),
+            .user(.init(name: "Brouk Pytlík", image: UIImage(systemName: "person.circle")!, reputation: "67890", isFollowed: false)),
             .action(.init(title: "Do not press!"))
         ]
         

@@ -139,6 +139,7 @@ private extension UsersListViewModel {
         return .user(.init(
             name: user.name,
             image: image ?? Constant.fallbackUserImage,
+            reputation: String(user.reputation),
             isFollowed: isFollowed
         ))
     }

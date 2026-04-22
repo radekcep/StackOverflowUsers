@@ -12,16 +12,19 @@ import UIKit
 struct UserUIModel: Equatable {
     let name: String
     let image: UIImage
+    let reputation: String
     let isFollowed: Bool
 }
 
 // MARK: - UITableViewCell
 
 class UserCell: UITableViewCell {
-    private var stackView = UIStackView()
+    private var mainStackView = UIStackView()
+    private var titleStackView = UIStackView()
     private let userImageView = UIImageView()
-    private var titleLabel = UILabel()
-    private var followButton = UIButton()
+    private let titleLabel = UILabel()
+    private let reputationLabel = UILabel()
+    private let followButton = UIButton()
     
     var onFollowClick: (() -> Void)?
     
@@ -37,20 +40,32 @@ class UserCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        userImageView.image = nil
+        titleLabel.text = nil
+        reputationLabel.text = nil
+        followButton.setTitle(nil, for: .normal)
+    }
+    
     func addSubviews() {
-        contentView.addSubview(stackView)
-        stackView.addArrangedSubview(userImageView)
-        stackView.addArrangedSubview(titleLabel)
-        stackView.addArrangedSubview(followButton)
+        contentView.addSubview(mainStackView)
+        
+        titleStackView.addArrangedSubview(titleLabel)
+        titleStackView.addArrangedSubview(reputationLabel)
+        
+        mainStackView.addArrangedSubview(userImageView)
+        mainStackView.addArrangedSubview(titleStackView)
+        mainStackView.addArrangedSubview(followButton)
     }
     
     func constraintSubviews() {
-        stackView.translatesAutoresizingMaskIntoConstraints = false
+        mainStackView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.topAnchor),
-            stackView.bottomAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.bottomAnchor),
-            stackView.leadingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.trailingAnchor),
+            mainStackView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            mainStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            mainStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            mainStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
         ])
         
         userImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -61,12 +76,15 @@ class UserCell: UITableViewCell {
     }
     
     func setupSubviews() {
-        stackView.axis = .horizontal
-        stackView.alignment = .center
-        stackView.distribution = .fill
-        stackView.spacing = Spacing.s
-        stackView.isLayoutMarginsRelativeArrangement = true
-        stackView.layoutMargins = .s
+        mainStackView.axis = .horizontal
+        mainStackView.alignment = .center
+        mainStackView.distribution = .fill
+        mainStackView.spacing = Spacing.s
+        mainStackView.isLayoutMarginsRelativeArrangement = true
+        mainStackView.layoutMargins = .s
+        
+        titleStackView.axis = .vertical
+        titleStackView.setContentHuggingPriority(.defaultLow, for: .horizontal)
         
         userImageView.layer.cornerRadius = Spacing.xl / 2
         userImageView.clipsToBounds = true
@@ -75,10 +93,14 @@ class UserCell: UITableViewCell {
             .init { [weak self] _ in self?.onFollowClick?() },
             for: .touchUpInside
         )
+        followButton.setContentHuggingPriority(.required, for: .horizontal)
+        followButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        
     }
     
     func load(_ model: UserUIModel) {
         titleLabel.text = model.name
+        reputationLabel.text = model.reputation
         userImageView.image = model.image
         
         if model.isFollowed {
@@ -97,6 +119,7 @@ class UserCell: UITableViewCell {
     let model = UserUIModel(
         name: "Ferda Mravenec",
         image: UIImage(systemName: "person.circle")!,
+        reputation: "12345",
         isFollowed: true
     )
     

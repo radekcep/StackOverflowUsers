@@ -30,6 +30,7 @@ class UsersCoordinator {
         let viewController = UsersListViewController(viewModel: viewModel)
         viewModel.view = viewController
         
+        navigationController.navigationBar.prefersLargeTitles = true
         navigationController.viewControllers = [viewController]
     }
 }
